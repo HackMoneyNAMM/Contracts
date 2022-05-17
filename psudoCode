@@ -1,0 +1,51 @@
+def Ufun(assetArr, sigma, eta):
+    a = assetArr[0]
+    b = assetArr[1]
+    c = assetArr[2]
+
+    x = (a ** (1 - self.sigma) + b ** (1 - self.sigma)) ** (1 / (1 - self.sigma))
+    U = x ** (1 - self.eta) + y ** (1 - self.eta)
+    return(U)
+        
+def diff(reserveArr, changeInReserveArr, sigma, eta):
+    UStart = Ufun(reserveArr, sigma, eta)
+    UChange = Ufun(changeInReserveArr)
+    return UChange - UStart
+
+def calcTokensToRelease():
+    '''
+    Newton's method for finding root of diff function
+    '''
+
+    indexOfTokenGiven = 0
+    amountOfTokenGiven = 10
+    indexOfTargetToken = 2
+
+    sigma = 0.99
+    eta = 0.2
+
+    #Incoming assets being traded
+    incomingAssets=[0, 0, 0]
+    incomingAssets[indexOfTokenGiven] = amountOfTokenGiven
+
+    #Current Reserves
+    reserves = [10, 10, 10]
+
+    changeInReserveArr = reserves + incomingAssets
+
+    tokens = ["cUSDAddr", "USDCAddr", "ETHAddr"]
+
+    x0 = amountOfTokenGiving
+    k = indexOfTargetToken
+
+    while abs(diff(reserveArr, changeInReserveArr, sigma, eta)) > 1e-10:
+        y0 = diff(reserveArr, changeInReserveArr, sigma, eta)
+        incomingAssets[k] += 1e-1
+        x1 = incomingAssets[k]
+        y1 = diff(reserveArr, changeInReserveArr, sigma, eta)
+        deriv = 100 * (y1 - y0) / (x1 - x0)
+        x0 -= y0 / deriv
+        incomingAssets[k] = x0
+
+    return x0.real
+
