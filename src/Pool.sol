@@ -2,6 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import * as math from  "./UnsignedConsumer.sol";
+
 
 contract Pool {
 
@@ -46,8 +48,8 @@ contract Pool {
         uint a = assetArr[0]; 
         uint b = assetArr[1]; 
         uint y = assetArr[2];
-        uint x = (a ** (1 - sigma) + b ** (1 - sigma)) ** (1 / (1 - sigma));
-        uint U = x ** (1 - eta) + y ** (1 - eta); 
+        uint x = ( math.unsignedPow(a , (1-sigma)) + math.unsignedPow(math.unsignedPow(b , (1 - sigma)) , math.unsignedDiv(1 , (1 - sigma))));
+        uint U = math.unsignedPow(x , (1 - eta)) +  math.unsignedPow(y,  (1 - eta)); 
         return U; 
 
 
@@ -78,14 +80,14 @@ contract Pool {
 
         while (( uint(abs( int(diff(reserve, changeInReserveArr))) * (1**10))) > 1){
 
-            sigma = sigma/100; 
-            eta = eta/100; 
+            sigma = math.unsignedDiv(sigma, 100); 
+            eta =  math.unsignedDiv(eta, 100); 
             uint y0 = diff(reserve, changeInReserveArr); 
-            //incomingAssets[k] += 0.1; 
+            incomingAssets[k] += math.unsignedDiv(1,10); 
             uint x1 = incomingAssets[k]; 
             uint y1 = diff(reserve, changeInReserveArr); 
-            uint deriv = 100 * (y1 - y0) / (x1 - x0); 
-            x0 -= (y0 / deriv); 
+            uint deriv = math.unsignedMul(100 ,  math.unsignedDiv((y1 - y0) , (x1 - x0))); 
+            x0 -= math.unsignedDiv(y0 , deriv); 
             incomingAssets[k] = x0; 
 
         }
