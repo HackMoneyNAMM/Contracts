@@ -30,4 +30,11 @@ contract UnsignedConsumer {
   function unsignedYield(uint256 principal, uint256 apr) external pure returns (uint256 result) {
     result = principal.mul(apr);
   }
+
+   function unsignedDiv(uint256 x, uint256 y) external pure returns (uint256 result) {
+    result = x.div(y);
+  }
+
+
+
 }
