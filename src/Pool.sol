@@ -2,10 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import * as math from  "./UnsignedConsumer.sol";
-
+//import * as math from  "./UnsignedConsumer.sol";
+import "PRBMath/PRBMathUD60x18.sol";
 
 contract Pool {
+    using PRBMathUD60x18 for uint256;
 
     uint total_token_nums; 
     address[] tokens; 
@@ -48,8 +49,8 @@ contract Pool {
         uint a = assetArr[0]; 
         uint b = assetArr[1]; 
         uint y = assetArr[2];
-        uint x = ( math.unsignedPow(a , (1-sigma)) + math.unsignedPow(math.unsignedPow(b , (1 - sigma)) , math.unsignedDiv(1 , (1 - sigma))));
-        uint U = math.unsignedPow(x , (1 - eta)) +  math.unsignedPow(y,  (1 - eta)); 
+        uint x = ( unsignedPow(a , (1-sigma)) + unsignedPow(unsignedPow(b , (1 - sigma)) , unsignedDiv(1 , (1 - sigma))));
+        uint U = unsignedPow(x , (1 - eta)) +  unsignedPow(y,  (1 - eta)); 
         return U; 
 
 
@@ -80,14 +81,14 @@ contract Pool {
 
         while (( uint(abs( int(diff(reserve, changeInReserveArr))) * (1**10))) > 1){
 
-            sigma = math.unsignedDiv(sigma, 100); 
-            eta =  math.unsignedDiv(eta, 100); 
+            sigma = unsignedDiv(sigma, 100); 
+            eta =  unsignedDiv(eta, 100); 
             uint y0 = diff(reserve, changeInReserveArr); 
-            incomingAssets[k] += math.unsignedDiv(1,10); 
+            incomingAssets[k] += unsignedDiv(1,10); 
             uint x1 = incomingAssets[k]; 
             uint y1 = diff(reserve, changeInReserveArr); 
-            uint deriv = math.unsignedMul(100 ,  math.unsignedDiv((y1 - y0) , (x1 - x0))); 
-            x0 -= math.unsignedDiv(y0 , deriv); 
+            uint deriv = unsignedMul(100 ,  unsignedDiv((y1 - y0) , (x1 - x0))); 
+            x0 -= unsignedDiv(y0 , deriv); 
             incomingAssets[k] = x0; 
 
         }
@@ -100,6 +101,22 @@ contract Pool {
     {
     return x >= 0 ? x : -x;
     }
+
+      /// @dev Note that "y" is a basic uint256 integer, not a fixed-point number.
+  function unsignedPow(uint256 x, uint256 y) public pure returns (uint256 result) {
+    result = x.pow(y);
+  }
+
+     function unsignedDiv(uint256 x, uint256 y) public pure returns (uint256 result) {
+    result = x.div(y);
+  }
+
+    /// @notice Calculates x*y÷1e18 while handling possible intermediary overflow.
+  /// @dev Try this with x = type(uint256).max and y = 5e17.
+  function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
+    result = PRBMathUD60x18.mul(x, y);
+  }
+
 
     
 }
