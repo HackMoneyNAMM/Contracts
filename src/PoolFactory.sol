@@ -18,7 +18,7 @@ contract PoolFactory {
         address[] tokens;
     }
 
-    function newPool(address[] memory tokens) public returns (address poolAddr){
+    function newPool(address[] memory tokens, uint256 sigma, uint256 eta) public returns (address poolAddr){
 
         //I don't like this, but its almost necessary....
         for (uint256 i=0; i<tokens.length; i++){
@@ -30,7 +30,7 @@ contract PoolFactory {
             require(tokens[i] != address(0));
         }
 
-        Pool deployedPool = new Pool();
+        Pool deployedPool = new Pool(tokens, tokens.length, sigma, eta);
 
         PoolStruct memory pool;
         pool.id = poolIdCntr;

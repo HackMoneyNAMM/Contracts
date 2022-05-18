@@ -15,12 +15,12 @@ contract Pool {
     uint eta; 
 
 
-    constructor( address[] memory tokens_, uint total_token_nums_,  uint sigma_, uint eta_)
+    constructor( address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
         sigma = sigma_; 
         eta = eta_; 
         tokens = tokens_; 
-        total_token_nums = total_token_nums_; 
+        total_token_nums = total_token_num_; 
         
     }
     
