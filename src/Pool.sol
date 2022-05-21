@@ -118,7 +118,7 @@ contract Pool {
             incomingAssets[k] = x0; 
         }
 
-        return 0; 
+        return x0; 
 
     }
 
