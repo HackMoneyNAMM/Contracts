@@ -12,8 +12,8 @@ contract Pool {
     address[] tokens; 
     uint total_supply; 
     uint[] reserve;
-    uint sigma; 
-    uint eta; 
+    uint _sigma; 
+    uint _eta; 
 
     LPToken lpToken;
 
@@ -23,8 +23,8 @@ contract Pool {
 
     constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
-        sigma = sigma_; 
-        eta = eta_; 
+        _sigma = sigma_; 
+        _eta = eta_; 
         tokens = tokens_; 
         total_token_nums = total_token_num_; 
         lpToken = LPToken(tokenAddress);
@@ -73,8 +73,8 @@ contract Pool {
 
     function Ufun(uint[] memory assetArr) public view returns(uint)
     {
-        sigma = unsignedDiv(sigma, 100);
-        eta = unsignedDiv(eta, 100);
+        uint256 sigma = unsignedDiv(_sigma, 100);
+        uint256 eta = unsignedDiv(_eta, 100);
 
         require(assetArr.length >= 3);
         uint a = assetArr[0]; 
@@ -91,7 +91,7 @@ contract Pool {
         return UChange - UStart; 
     } 
 
-    function calcTokensToRelease( uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public returns(uint){
+    function calcTokensToRelease( uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public view returns(uint){
  
         uint[] memory incomingAssets = new uint[](total_token_nums);
         incomingAssets[indexOfTokenGiven] = amountOfTokenGiven; 
@@ -109,9 +109,6 @@ contract Pool {
         uint k = indexOfTargetToken;     
 
         while (( uint(abs( int(diff(reserve, changeInReserveArr))) * (1**10))) > 1){
-
-            sigma = unsignedDiv(sigma, 100); 
-            eta =  unsignedDiv(eta, 100); 
             uint y0 = diff(reserve, changeInReserveArr); 
             incomingAssets[k] += unsignedDiv(1,10); 
             uint x1 = incomingAssets[k]; 
@@ -119,7 +116,6 @@ contract Pool {
             uint deriv = unsignedMul(100 ,  unsignedDiv((y1 - y0) , (x1 - x0))); 
             x0 -= unsignedDiv(y0 , deriv); 
             incomingAssets[k] = x0; 
-
         }
 
         return 0; 

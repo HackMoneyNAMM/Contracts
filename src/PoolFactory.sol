@@ -5,7 +5,7 @@ import "./Pool.sol";
 
 contract PoolFactory {
 
-    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address lpTokenAddress, address poolAddress, address[] tokenAddresses);
+    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address lpTokenAddress, address poolAddress, address[] tokenAddresses, uint256 sigma, uint256 eta);
 
     uint256 poolIdCntr = 0;
 
@@ -43,7 +43,7 @@ contract PoolFactory {
         pools[poolIdCntr] = pool;
         poolIdCntr++;
         
-        emit newPoolEvent(poolName, poolTicker, pool.id, pool.tokenAddr, pool.addr, pool.tokens);
+        emit newPoolEvent(poolName, poolTicker, pool.id, pool.tokenAddr, pool.addr, pool.tokens, sigma, eta);
         return address(deployedPool);
     }
 
