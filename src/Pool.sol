@@ -73,6 +73,9 @@ contract Pool {
 
     function Ufun(uint[] memory assetArr) public view returns(uint)
     {
+        sigma = unsignedDiv(sigma, 100);
+        eta = unsignedDiv(eta, 100);
+
         require(assetArr.length >= 3);
         uint a = assetArr[0]; 
         uint b = assetArr[1]; 
@@ -80,8 +83,6 @@ contract Pool {
         uint x = ( unsignedPow(a , (1-sigma)) + unsignedPow(unsignedPow(b , (1 - sigma)) , unsignedDiv(1 , (1 - sigma))));
         uint U = unsignedPow(x , (1 - eta)) +  unsignedPow(y,  (1 - eta)); 
         return U; 
-
-
     } 
 
     function diff(uint[] memory reserveArr, uint[] memory changeInReserveArr) public view returns(uint){
