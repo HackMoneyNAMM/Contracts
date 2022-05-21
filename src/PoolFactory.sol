@@ -5,7 +5,7 @@ import "./Pool.sol";
 
 contract PoolFactory {
 
-    event newPoolEvent(uint256, address, address[]);
+    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address lpTokenAddress, address poolAddress, address[] tokenAddresses);
 
     uint256 poolIdCntr = 0;
 
@@ -16,9 +16,10 @@ contract PoolFactory {
         uint256 id;
         address addr;
         address[] tokens;
+        address tokenAddr;
     }
 
-    function newPool(address[] memory tokens, uint256 sigma, uint256 eta) public returns (address poolAddr){
+    function newPool(string memory poolName, string memory poolTicker, address[] memory tokens, uint256 sigma, uint256 eta) public returns (address poolAddr){
 
         //I don't like this, but its almost necessary....
         for (uint256 i=0; i<tokens.length; i++){
@@ -30,17 +31,19 @@ contract PoolFactory {
             require(tokens[i] != address(0));
         }
 
-        Pool deployedPool = new Pool(tokens, tokens.length, sigma, eta);
+        LPToken lpToken = new LPToken(poolName, poolTicker);
+        Pool deployedPool = new Pool(address(lpToken), tokens, tokens.length, sigma, eta);
 
         PoolStruct memory pool;
         pool.id = poolIdCntr;
         pool.addr = address(deployedPool);
         pool.tokens = tokens;
+        pool.tokenAddr = address(lpToken);
 
         pools[poolIdCntr] = pool;
         poolIdCntr++;
         
-        emit newPoolEvent(pool.id, pool.addr, pool.tokens);
+        emit newPoolEvent(poolName, poolTicker, pool.id, pool.tokenAddr, pool.addr, pool.tokens);
         return address(deployedPool);
     }
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-//import * as math from  "./UnsignedConsumer.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "PRBMath/PRBMathUD60x18.sol";
+import "./LPToken.sol";
 
 contract Pool {
     using PRBMathUD60x18 for uint256;
@@ -15,29 +15,57 @@ contract Pool {
     uint sigma; 
     uint eta; 
 
+    LPToken lpToken;
 
-    constructor( address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
+    uint public constant MINIMUM_LIQUIDITY = 10**3;
+
+    event addedLiquidityEvent(address user, uint256[] amountsArr, uint256 LPGiven);
+
+    constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
         sigma = sigma_; 
         eta = eta_; 
         tokens = tokens_; 
         total_token_nums = total_token_num_; 
-        
+        lpToken = LPToken(tokenAddress);
     }
     
 
     function mint(uint[] memory amounts) public returns (uint) {
-
         require(amounts.length == total_token_nums);
+
         uint LPamount = 0; 
-        for (uint i=0; i<total_token_nums; i++) {
-            IERC20 token = IERC20(tokens[i]); 
-            token.transferFrom(msg.sender, address(this), amounts[i]); 
-            LPamount +=  ( amounts[i] * total_supply ) / reserve[i] ; 
-            reserve[i] += amounts[i];
+
+        if(total_supply == 0){
+            uint256 amountProduct = 0;
+            for(uint256 i=0; i<total_token_nums; i++){
+                if(i==0){
+                    amountProduct=amounts[0];
+                }
+                else{
+                    amountProduct=unsignedMul(amountProduct, amounts[i]);
+                }
+                total_supply += amounts[i];
+            }
+            uint256 rootedAmount = unsignedPow(amountProduct, unsignedDiv(1, total_token_nums));
+            LPamount = rootedAmount-MINIMUM_LIQUIDITY;
+            lpToken.mint(address(0), MINIMUM_LIQUIDITY);
         }
 
-        //mint(LPamount, address(this)); 
+        else{
+            for (uint i=0; i<total_token_nums; i++) {
+                IERC20 token = IERC20(tokens[i]); 
+                token.transferFrom(msg.sender, address(this), amounts[i]); 
+                LPamount +=  ( amounts[i] * total_supply ) / reserve[i] ; 
+                reserve[i] += amounts[i];
+                total_supply += amounts[i];
+            }   
+
+            
+        }
+        lpToken.mint(address(this), LPamount); 
+        
+        emit addedLiquidityEvent(msg.sender, amounts, LPamount);
         return LPamount; 
 
     }
@@ -102,21 +130,25 @@ contract Pool {
     return x >= 0 ? x : -x;
     }
 
-      /// @dev Note that "y" is a basic uint256 integer, not a fixed-point number.
-  function unsignedPow(uint256 x, uint256 y) public pure returns (uint256 result) {
-    result = x.pow(y);
-  }
+    /// @dev Note that "y" is a basic uint256 integer, not a fixed-point number.
+    function unsignedPow(uint256 x, uint256 y) public pure returns (uint256 result) {
+        result = x.pow(y);
+        return result;
+    }
 
-     function unsignedDiv(uint256 x, uint256 y) public pure returns (uint256 result) {
-    result = x.div(y);
-  }
+    function unsignedDiv(uint256 x, uint256 y) public pure returns (uint256 result) {
+        result = x.div(y);
+        return result;
+    }
 
     /// @notice Calculates x*y÷1e18 while handling possible intermediary overflow.
-  /// @dev Try this with x = type(uint256).max and y = 5e17.
-  function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
-    result = PRBMathUD60x18.mul(x, y);
-  }
+    /// @dev Try this with x = type(uint256).max and y = 5e17.
+    function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
+        result = PRBMathUD60x18.mul(x, y);
+        return result;
+    }  
 
-
-    
+    function sqrt(uint256 x) public pure returns (uint256 result){
+        return PRBMathUD60x18.sqrt(x);
+    }
 }
