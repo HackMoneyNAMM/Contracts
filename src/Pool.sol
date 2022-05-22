@@ -29,7 +29,7 @@ contract Pool {
     event addedLiquidityEvent(uint256 id, address user, uint256[] amountsArr, uint256 LPGiven);
     event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address LPTokenAddr, address poolAddress, address[] tokenAddresses, uint256 sigma, uint256 eta);
 
-    constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
+    constructor(string memory poolName, string memory poolTicker, address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
        require(total_token_num_ == 3); 
         _sigma = sigma_; 
