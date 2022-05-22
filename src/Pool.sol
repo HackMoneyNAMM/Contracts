@@ -26,7 +26,8 @@ contract Pool {
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
 
-    event addedLiquidityEvent(address user, uint256[] amountsArr, uint256 LPGiven);
+    event addedLiquidityEvent(uint256 id, address user, uint256[] amountsArr, uint256 LPGiven);
+    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address LPTokenAddr, address poolAddress, address[] tokenAddresses, uint256 sigma, uint256 eta);
 
     constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
@@ -35,66 +36,12 @@ contract Pool {
         _eta = eta_; 
         tokens = tokens_; 
         total_token_nums = total_token_num_; 
-        lpToken = LPToken(tokenAddress);
+        lpToken = new LPToken(poolName, poolTicker); // LP Token's address
+        reserve = new uint[](total_token_nums); 
+         emit newPoolEvent(poolName, poolTicker, id, address(lpToken), address(this), tokens, _sigma, _eta);
     }
 
-    // constructor()
-    // {
-        
-    //     _sigma = 99; 
-    //     _eta = 2;
-    //     tokens = [0x9D549699f410EE213DbbAD831920A2fE724b6654, 0x2bd63E94E32b9Bc88eE07adE60FE73224316D7ba, 0x2233825a5CFFC9552869d12C94F0e3fcCC194ae3]; // all OOO
-    //     total_token_nums = 3;
-    //     lpToken = new LPToken("LPToken", "LPT"); // LP Token's address 
-    //     reserve = new uint[](total_token_nums); 
-    // }
-
-    function getU() public view returns(uint){
-        return _U;
-    }
-
-    function setU(uint U) public {
-        _U = U; 
-    }
-
-
-    function getLPTokenAddr() public view returns(address){
-        return address(lpToken);
-    }
-
-
-    function getTotalTokenNums() public view returns (uint){
-        return total_token_nums;
-    }
-
-    function getTokens() public view returns ( address[] memory){
-        return tokens;
-    }
-
-    function getTotalSupply() public view returns (uint){
-        return total_supply; 
-    }
-
-    function getReserve() public view returns ( uint[] memory){
-        return reserve;
-    }
-
-    function getSigma() public view returns (uint){
-        return _sigma; 
-    }
-
-    function getEta() public view returns (uint){
-        return _eta;
-    }
     
-    function getAmountProduct() public view returns (uint){
-        return amounts_product;
-    }
-
-    function getRootedAmount() public view returns (uint){
-        return rooted_amount; 
-    }
-
     // Just for testing with Remix 
     function mintTest(uint[] memory arr) public returns(uint){
         for (uint i=0; i<arr.length; i++) {
@@ -116,7 +63,6 @@ contract Pool {
         // iterate over tokens in contract and get the balance of them and put them in new array 
 
     }
-
 
     // GOOD 
     function mint(uint[] memory amounts) public returns (uint) {
@@ -169,7 +115,7 @@ contract Pool {
             total_supply += added; 
         }
         lpToken.mint(msg.sender, LPamount); 
-        emit addedLiquidityEvent(msg.sender, amounts, LPamount);
+        emit addedLiquidityEvent(id, msg.sender, amounts, LPamount);
         return LPamount;    
 
     }
@@ -237,22 +183,6 @@ contract Pool {
     }
 
 
-    // function swap(int indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken){
-    //     //Transfer users tokens to the contract
-    //     //amountToRelease = calcTokensToRelease
-    //     //reserves[indexOfTargetToken] -= amountToRelease
-    //     //Transfer amountToRelease to user
-    // }
-
-
-    // function testSwap(uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public  returns(uint){
-
-    //     uint amount = amountOfTokenGiven * (10**18); 
-    //     return swap(indexOfTokenGiven,  amount, indexOfTargetToken ); 
-
-
-    // }
-
     function swap(uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public  returns(uint){
         uint amountToRelease = calcTokensToRelease( indexOfTokenGiven,  amountOfTokenGiven, indexOfTargetToken ); 
 
@@ -306,4 +236,51 @@ contract Pool {
         result = PRBMathUD60x18.div(x,y); 
         return result;
     }
+
+    function getU() public view returns(uint){
+        return _U;
+    }
+
+    function setU(uint U) public {
+        _U = U; 
+    }
+
+
+    function getLPTokenAddr() public view returns(address){
+        return address(lpToken);
+    }
+
+
+    function getTotalTokenNums() public view returns (uint){
+        return total_token_nums;
+    }
+
+    function getTokens() public view returns ( address[] memory){
+        return tokens;
+    }
+
+    function getTotalSupply() public view returns (uint){
+        return total_supply; 
+    }
+
+    function getReserve() public view returns ( uint[] memory){
+        return reserve;
+    }
+
+    function getSigma() public view returns (uint){
+        return _sigma; 
+    }
+
+    function getEta() public view returns (uint){
+        return _eta;
+    }
+    
+    function getAmountProduct() public view returns (uint){
+        return amounts_product;
+    }
+
+    function getRootedAmount() public view returns (uint){
+        return rooted_amount; 
+    }
+
 }
