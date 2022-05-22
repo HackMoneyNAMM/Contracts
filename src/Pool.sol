@@ -2,13 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import "PRBMath/PRBMathUD60x18.sol";
-import "./LPToken.sol";
-
-// remix 
 // import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "PRBMath/PRBMathUD60x18.sol";
 // import "prb-math/contracts/PRBMathUD60x18.sol";
-
+import "./LPToken.sol";
 
 contract Pool {
     using PRBMathUD60x18 for uint256;
@@ -21,6 +18,7 @@ contract Pool {
     uint _eta; 
     uint amounts_product; // TESTING 
     uint rooted_amount; // TESTING 
+    uint _U; 
 
 
     LPToken lpToken;
@@ -49,6 +47,14 @@ contract Pool {
     //     lpToken = new LPToken("LPToken", "LPT"); // LP Token's address 
     //     reserve = new uint[](total_token_nums); 
     // }
+
+    function getU() public view returns(uint){
+        return _U;
+    }
+
+    function setU(uint U) public {
+        _U = U; 
+    }
 
 
     function getLPTokenAddr() public view returns(address){
@@ -111,11 +117,14 @@ contract Pool {
     }
 
 
-
+    // GOOD 
     function mint(uint[] memory amounts) public returns (uint) {
         require(amounts.length == total_token_nums);
         // [2100000000000000000,  2000000000000000000]
         uint LPamount = 0; 
+
+        // EQUAl OK 
+        // NOT EQUAL 
 
         if(total_supply == 0){
             uint256 amountProduct = 0;
@@ -139,24 +148,41 @@ contract Pool {
             LPamount = rootedAmount-MINIMUM_LIQUIDITY;
         }
 
+        // EQUAl OK 
+        // NOT EQUAL 
+
         else{
             // NOT TESTED
+            uint added = 0; 
             for (uint i=0; i<total_token_nums; i++) {
                 IERC20 token = IERC20(tokens[i]); 
                 token.transferFrom(msg.sender, address(this), amounts[i]); 
                 // sends from your wallet to contract 
-                LPamount +=  unsignedDiv( unsignedMul( amounts[i] , (total_supply * (10**18)) ) , reserve[i]) ;  
+                                             // (5     *          15  ) /  5  
+                LPamount +=  unsignedDiv( unsignedMul( amounts[i] , total_supply)  , reserve[i]) ;  
                 reserve[i] += amounts[i];
-                total_supply += amounts[i];
+                added += amounts[i]; 
+
+                
             }   
+            total_supply += added; 
         }
-        lpToken.mint(address(this), LPamount); 
+        lpToken.mint(msg.sender, LPamount); 
         emit addedLiquidityEvent(msg.sender, amounts, LPamount);
         return LPamount;    
 
     }
 
+    // Just for testing with Remix 
+    function UfunTest(uint[] memory arr) public view returns(uint){
+        for (uint i=0; i<arr.length; i++) {
+            arr[i] = arr[i] * (10**18); 
+            
+        } 
+        return Ufun(arr); 
+    }
 
+    // GOOD 
     function Ufun(uint[] memory assetArr) public view returns(uint)
     {
         uint256 sigma = unsignedDiv(_sigma, 100);
@@ -166,16 +192,19 @@ contract Pool {
         uint a = assetArr[0]; 
         uint b = assetArr[1]; 
         uint y = assetArr[2];
-        uint x = ( unsignedPow(a , (1-sigma)) + unsignedPow(unsignedPow(b , (1 - sigma)) , unsignedDiv(1 , (1 - sigma))));
-        uint U = unsignedPow(x , (1 - eta)) +  unsignedPow(y,  (1 - eta)); 
+        uint x = ( unsignedPow(a , ((10**18)-sigma)) + unsignedPow(unsignedPow(b , ((10**18) - sigma)) , unsignedDiv((10**18), ((10**18)- sigma))));
+        uint U = unsignedPow(x , ((10**18)- eta)) +  unsignedPow(y,  ((10**18)- eta)); 
+        // setU(U);
         return U; 
     } 
 
+    // GOOD PROBABLY 
     function diff(uint[] memory reserveArr, uint[] memory changeInReserveArr) public view returns(uint){
         uint UStart = Ufun(reserveArr);  
         uint UChange = Ufun(changeInReserveArr); 
         return UChange - UStart; 
     } 
+
 
     function calcTokensToRelease( uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public view returns(uint){
  
@@ -187,19 +216,17 @@ contract Pool {
         require(reserve.length == changeInReserveArr.length); 
 
         for (uint i=0; i< reserve.length; i++) {
-            changeInReserveArr[i] = reserve[i] + incomingAssets[i]; 
-        }
-
-
+            changeInReserveArr[i] = reserve[i] + incomingAssets[i]; }
         uint x0 = amountOfTokenGiven; 
         uint k = indexOfTargetToken;     
 
+
         while (( uint(abs( int(diff(reserve, changeInReserveArr))) * (1**10))) > 1){
             uint y0 = diff(reserve, changeInReserveArr); 
-            incomingAssets[k] += unsignedDiv(1,10); 
+            incomingAssets[k] += unsignedDiv(1*(10**18), 10*(10**18)); 
             uint x1 = incomingAssets[k]; 
             uint y1 = diff(reserve, changeInReserveArr); 
-            uint deriv = unsignedMul(100 ,  unsignedDiv((y1 - y0) , (x1 - x0))); 
+            uint deriv = unsignedMul(100 * (10**18) ,  unsignedDiv((y1 - y0) , (x1 - x0))); 
             x0 -= unsignedDiv(y0 , deriv); 
             incomingAssets[k] = x0; 
         }
@@ -208,13 +235,37 @@ contract Pool {
 
     }
 
+
+    // function swap(int indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken){
+    //     //Transfer users tokens to the contract
+    //     //amountToRelease = calcTokensToRelease
+    //     //reserves[indexOfTargetToken] -= amountToRelease
+    //     //Transfer amountToRelease to user
+    // }
+
+    function swap(uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public  returns(uint){
+        uint amountToRelease = calcTokensToRelease( indexOfTokenGiven,  amountOfTokenGiven, indexOfTargetToken ); 
+
+        // user to contract 
+        IERC20 token1 = IERC20(tokens[indexOfTokenGiven]); 
+        token1.transferFrom(  msg.sender, address(this), amountOfTokenGiven); 
+
+        // contract to user 
+        IERC20 token = IERC20(tokens[indexOfTargetToken]); 
+        token.transferFrom( address(this), msg.sender, amountToRelease); 
+
+        reserve[indexOfTargetToken] -= amountToRelease; 
+        return amountToRelease;
+    }
+
+
     function abs(int x) private pure returns (int) 
     {
     return x >= 0 ? x : -x;
     }
 
 
-    // NOT WORKING 
+    // WORKING 
         /// @notice Calculates x*y÷1e18 while handling possible intermediary overflow.
         /// @dev Try this with x = type(uint256).max and y = 5e17.
     function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
@@ -228,7 +279,7 @@ contract Pool {
         return result;
     }
 
-    // WORKING 
+
     function unsignedSqrt(uint256 x) public pure returns (uint256 result){
         return PRBMathUD60x18.sqrt(x);
     }
@@ -236,151 +287,5 @@ contract Pool {
     function unsignedDiv(uint256 x, uint256 y) public pure returns (uint256 result) {
         result = PRBMathUD60x18.div(x,y); 
         return result;
-    }
-}
-
-
-contract Pool {
-    using PRBMathUD60x18 for uint256;
-
-    uint total_token_nums; 
-    address[] tokens; 
-    uint total_supply; 
-    uint[] reserve;
-    uint _sigma; 
-    uint _eta; 
-
-    LPToken lpToken;
-
-    uint public constant MINIMUM_LIQUIDITY = 10**3;
-
-    event addedLiquidityEvent(address user, uint256[] amountsArr, uint256 LPGiven);
-
-    constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
-    {
-        _sigma = sigma_; 
-        _eta = eta_; 
-        tokens = tokens_; 
-        total_token_nums = total_token_num_; 
-        lpToken = LPToken(tokenAddress);
-    }
-    
-
-    function mint(uint[] memory amounts) public returns (uint) {
-        require(amounts.length == total_token_nums);
-
-        uint LPamount = 0; 
-
-        if(total_supply == 0){
-            uint256 amountProduct = 0;
-            for(uint256 i=0; i<total_token_nums; i++){
-                if(i==0){
-                    amountProduct=amounts[0];
-                }
-                else{
-                    amountProduct=unsignedMul(amountProduct, amounts[i]);
-                }
-                total_supply += amounts[i];
-            }
-            uint256 rootedAmount = unsignedPow(amountProduct, unsignedDiv(1, total_token_nums));
-            LPamount = rootedAmount-MINIMUM_LIQUIDITY;
-            lpToken.mint(address(0), MINIMUM_LIQUIDITY);
-        }
-
-        else{
-            for (uint i=0; i<total_token_nums; i++) {
-                IERC20 token = IERC20(tokens[i]); 
-                token.transferFrom(msg.sender, address(this), amounts[i]); 
-                LPamount +=  ( amounts[i] * total_supply ) / reserve[i] ; 
-                reserve[i] += amounts[i];
-                total_supply += amounts[i];
-            }   
-
-            
-        }
-        lpToken.mint(address(this), LPamount); 
-        
-        emit addedLiquidityEvent(msg.sender, amounts, LPamount);
-        return LPamount; 
-
-    }
-
-
-    function Ufun(uint[] memory assetArr) public view returns(uint)
-    {
-        uint256 sigma = unsignedDiv(_sigma, 100);
-        uint256 eta = unsignedDiv(_eta, 100);
-
-        require(assetArr.length >= 3);
-        uint a = assetArr[0]; 
-        uint b = assetArr[1]; 
-        uint y = assetArr[2];
-        uint x = ( unsignedPow(a , (1-sigma)) + unsignedPow(unsignedPow(b , (1 - sigma)) , unsignedDiv(1 , (1 - sigma))));
-        uint U = unsignedPow(x , (1 - eta)) +  unsignedPow(y,  (1 - eta)); 
-        return U; 
-    } 
-
-    function diff(uint[] memory reserveArr, uint[] memory changeInReserveArr) public view returns(uint){
-        uint UStart = Ufun(reserveArr);  
-        uint UChange = Ufun(changeInReserveArr); 
-        return UChange - UStart; 
-    } 
-
-    function calcTokensToRelease( uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public view returns(uint){
- 
-        uint[] memory incomingAssets = new uint[](total_token_nums);
-        incomingAssets[indexOfTokenGiven] = amountOfTokenGiven; 
-
-        uint[] memory changeInReserveArr = new uint[](total_token_nums);
-
-        require(reserve.length == changeInReserveArr.length); 
-
-        for (uint i=0; i< reserve.length; i++) {
-            changeInReserveArr[i] = reserve[i] + incomingAssets[i]; 
-        }
-
-
-        uint x0 = amountOfTokenGiven; 
-        uint k = indexOfTargetToken;     
-
-        while (( uint(abs( int(diff(reserve, changeInReserveArr))) * (1**10))) > 1){
-            uint y0 = diff(reserve, changeInReserveArr); 
-            incomingAssets[k] += unsignedDiv(1,10); 
-            uint x1 = incomingAssets[k]; 
-            uint y1 = diff(reserve, changeInReserveArr); 
-            uint deriv = unsignedMul(100 ,  unsignedDiv((y1 - y0) , (x1 - x0))); 
-            x0 -= unsignedDiv(y0 , deriv); 
-            incomingAssets[k] = x0; 
-        }
-
-        return x0; 
-
-    }
-
-    function abs(int x) private pure returns (int) 
-    {
-    return x >= 0 ? x : -x;
-    }
-
-    /// @dev Note that "y" is a basic uint256 integer, not a fixed-point number.
-    function unsignedPow(uint256 x, uint256 y) public pure returns (uint256 result) {
-        result = x.pow(y);
-        return result;
-    }
-
-    function unsignedDiv(uint256 x, uint256 y) public pure returns (uint256 result) {
-        result = x.div(y);
-        return result;
-    }
-
-    /// @notice Calculates x*y÷1e18 while handling possible intermediary overflow.
-    /// @dev Try this with x = type(uint256).max and y = 5e17.
-    function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
-        result = PRBMathUD60x18.mul(x, y);
-        return result;
-    }  
-
-    function sqrt(uint256 x) public pure returns (uint256 result){
-        return PRBMathUD60x18.sqrt(x);
     }
 }
