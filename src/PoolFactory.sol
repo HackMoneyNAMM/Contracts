@@ -5,7 +5,11 @@ import "./Pool.sol";
 
 contract PoolFactory {
 
-    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address lpTokenAddress, address poolAddress, address[] tokenAddresses, uint256 sigma, uint256 eta);
+    event pong(uint256 cntr);
+    uint256 pongCntr =0;
+
+
+    event poolDeploy(uint256 id, address addr);
 
     uint256 poolIdCntr = 0;
 
@@ -16,7 +20,11 @@ contract PoolFactory {
         uint256 id;
         address addr;
         address[] tokens;
-        address tokenAddr;
+    }
+
+    function ping() public {
+        pongCntr += 1;
+        emit pong(pongCntr);
     }
 
     function newPool(string memory poolName, string memory poolTicker, address[] memory tokens, uint256 sigma, uint256 eta) public returns (address poolAddr){
@@ -42,7 +50,7 @@ contract PoolFactory {
         pools[poolIdCntr] = pool;
         poolIdCntr++;
         
-        emit newPoolEvent(poolName, poolTicker, pool.id, pool.tokenAddr, pool.addr, pool.tokens, sigma, eta);
+        emit poolDeploy(pool.id, pool.addr);
         return address(deployedPool);
     }
 

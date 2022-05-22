@@ -28,7 +28,8 @@ contract Pool {
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
 
-    event addedLiquidityEvent(address user, uint256[] amountsArr, uint256 LPGiven);
+    event addedLiquidityEvent(uint256 id, address user, uint256[] amountsArr, uint256 LPGiven);
+    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address LPTokenAddr, address poolAddress, address[] tokenAddresses, uint256 sigma, uint256 eta);
 
     constructor(uint256 _id, string memory poolName, string memory poolTicker, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
@@ -38,8 +39,9 @@ contract Pool {
         _eta = eta_; 
         tokens = tokens_; 
         total_token_nums = total_token_num_; 
-        lpToken = new LPToken(poolName, poolTicker); // LP Token's address 
+        lpToken = new LPToken(poolName, poolTicker); // LP Token's address
         reserve = new uint[](total_token_nums); 
+         emit newPoolEvent(poolName, poolTicker, id, address(lpToken), address(this), tokens, _sigma, _eta);
     }
 
     // constructor()
@@ -153,7 +155,7 @@ contract Pool {
             }   
         }
         lpToken.mint(address(this), LPamount); 
-        emit addedLiquidityEvent(msg.sender, amounts, LPamount);
+        emit addedLiquidityEvent(id, msg.sender, amounts, LPamount);
         return LPamount;    
 
     }
@@ -208,6 +210,13 @@ contract Pool {
 
         return x0; 
 
+    }
+
+    function swap(int indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken) public {
+        //Transfer users tokens to the contract
+        //amountToRelease = calcTokensToRelease
+        //reserves[indexOfTargetToken] -= amountToRelease
+        //Transfer amountToRelease to user
     }
 
     function abs(int x) private pure returns (int) 
