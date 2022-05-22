@@ -1,10 +1,11 @@
+
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+//import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "PRBMath/PRBMathUD60x18.sol";
-// import "prb-math/contracts/PRBMathUD60x18.sol";
+//import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./LPToken.sol";
 
 contract Pool {
@@ -19,7 +20,6 @@ contract Pool {
     uint amounts_product; // TESTING 
     uint rooted_amount; // TESTING 
     uint _U; 
-    uint256 id;
 
 
     LPToken lpToken;
@@ -28,16 +28,14 @@ contract Pool {
 
     event addedLiquidityEvent(address user, uint256[] amountsArr, uint256 LPGiven);
 
-    constructor(uint256 _id, string memory poolName, string memory poolTicker, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
+    constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
-       require(total_token_num_ == tokens_.length); 
-       id = _id;
+       require(total_token_num_ == 3); 
         _sigma = sigma_; 
         _eta = eta_; 
         tokens = tokens_; 
         total_token_nums = total_token_num_; 
-        lpToken = new LPToken(poolName, poolTicker); // LP Token's address 
-        reserve = new uint[](total_token_nums); 
+        lpToken = LPToken(tokenAddress);
     }
 
     // constructor()
@@ -246,16 +244,28 @@ contract Pool {
     //     //Transfer amountToRelease to user
     // }
 
+
+    // function testSwap(uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public  returns(uint){
+
+    //     uint amount = amountOfTokenGiven * (10**18); 
+    //     return swap(indexOfTokenGiven,  amount, indexOfTargetToken ); 
+
+
+    // }
+
     function swap(uint indexOfTokenGiven,  uint amountOfTokenGiven, uint indexOfTargetToken ) public  returns(uint){
         uint amountToRelease = calcTokensToRelease( indexOfTokenGiven,  amountOfTokenGiven, indexOfTargetToken ); 
 
         // user to contract 
         IERC20 token1 = IERC20(tokens[indexOfTokenGiven]); 
-        token1.transferFrom(  msg.sender, address(this), amountOfTokenGiven); 
+        token1.transferFrom(  msg.sender, address(this), amountOfTokenGiven  * (10**18) ); 
+        // allowance to address(this)
 
         // contract to user 
-        IERC20 token = IERC20(tokens[indexOfTargetToken]); 
-        token.transferFrom( address(this), msg.sender, amountToRelease); 
+        ERC20 token = ERC20(tokens[indexOfTargetToken]); 
+        //token.increaseAllowance(msg.sender, amountToRelease); 
+        //require() contract must have amount to release 
+        token.transfer( msg.sender, amountToRelease * (10**18) ); 
 
         reserve[indexOfTargetToken] -= amountToRelease; 
         return amountToRelease;
@@ -267,7 +277,13 @@ contract Pool {
     return x >= 0 ? x : -x;
     }
 
+    // function unsignedbs(uint256 x) public pure returns (uint256 result) {
+    //     result = PRBMathUD60x18.abs(x);
+    //     return result;
+    // }  
 
+
+    // NOT WORKING 
         /// @notice Calculates x*y÷1e18 while handling possible intermediary overflow.
         /// @dev Try this with x = type(uint256).max and y = 5e17.
     function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
@@ -281,6 +297,7 @@ contract Pool {
         return result;
     }
 
+    // WORKING 
     function unsignedSqrt(uint256 x) public pure returns (uint256 result){
         return PRBMathUD60x18.sqrt(x);
     }
