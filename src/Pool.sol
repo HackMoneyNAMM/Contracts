@@ -19,6 +19,7 @@ contract Pool {
     uint amounts_product; // TESTING 
     uint rooted_amount; // TESTING 
     uint _U; 
+    uint256 id;
 
 
     LPToken lpToken;
@@ -27,14 +28,16 @@ contract Pool {
 
     event addedLiquidityEvent(address user, uint256[] amountsArr, uint256 LPGiven);
 
-    constructor(address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
+    constructor(uint256 _id, string memory poolName, string memory poolTicker, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
-       require(total_token_num_ == 3); 
+       require(total_token_num_ == tokens_.length); 
+       id = _id;
         _sigma = sigma_; 
         _eta = eta_; 
         tokens = tokens_; 
         total_token_nums = total_token_num_; 
-        lpToken = LPToken(tokenAddress);
+        lpToken = new LPToken(poolName, poolTicker); // LP Token's address 
+        reserve = new uint[](total_token_nums); 
     }
 
     // constructor()
@@ -265,7 +268,6 @@ contract Pool {
     }
 
 
-    // WORKING 
         /// @notice Calculates x*y÷1e18 while handling possible intermediary overflow.
         /// @dev Try this with x = type(uint256).max and y = 5e17.
     function unsignedMul(uint256 x, uint256 y) public pure returns (uint256 result) {
@@ -278,7 +280,6 @@ contract Pool {
         result = PRBMathUD60x18.pow(x,y);
         return result;
     }
-
 
     function unsignedSqrt(uint256 x) public pure returns (uint256 result){
         return PRBMathUD60x18.sqrt(x);

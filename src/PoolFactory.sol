@@ -31,14 +31,13 @@ contract PoolFactory {
             require(tokens[i] != address(0));
         }
 
-        LPToken lpToken = new LPToken(poolName, poolTicker);
-        Pool deployedPool = new Pool(address(lpToken), tokens, tokens.length, sigma, eta);
+        //LPToken lpToken = new LPToken(poolName, poolTicker); Have to 
+        Pool deployedPool = new Pool(poolIdCntr, poolName, poolTicker, tokens, tokens.length, sigma, eta);
 
         PoolStruct memory pool;
         pool.id = poolIdCntr;
         pool.addr = address(deployedPool);
         pool.tokens = tokens;
-        pool.tokenAddr = address(lpToken);
 
         pools[poolIdCntr] = pool;
         poolIdCntr++;
