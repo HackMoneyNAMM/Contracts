@@ -20,16 +20,16 @@ contract Pool {
     uint amounts_product; // TESTING 
     uint rooted_amount; // TESTING 
     uint _U; 
-
+    uint256 id;
 
     LPToken lpToken;
 
     uint public constant MINIMUM_LIQUIDITY = 10**3;
 
     event addedLiquidityEvent(uint256 id, address user, uint256[] amountsArr, uint256 LPGiven);
-    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address LPTokenAddr, address poolAddress, address[] tokenAddresses, uint256 sigma, uint256 eta);
+    event newPoolEvent(string poolName, string poolTicker, uint256 poolId, address LPTokenAddr, address poolAddress, address[] tokenAddresses, string[] tokenNames, uint256 sigma, uint256 eta);
 
-    constructor(string memory poolName, string memory poolTicker, address tokenAddress, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
+    constructor(uint256 _id, string memory poolName, string memory poolTicker, string[] memory tokenNames, address[] memory tokens_, uint total_token_num_,  uint sigma_, uint eta_)
     {
        require(total_token_num_ == 3); 
         _sigma = sigma_; 
@@ -38,7 +38,8 @@ contract Pool {
         total_token_nums = total_token_num_; 
         lpToken = new LPToken(poolName, poolTicker); // LP Token's address
         reserve = new uint[](total_token_nums); 
-         emit newPoolEvent(poolName, poolTicker, id, address(lpToken), address(this), tokens, _sigma, _eta);
+        id = _id;
+        emit newPoolEvent(poolName, poolTicker, id, address(lpToken), address(this), tokens, tokenNames, _sigma, _eta);
     }
 
     
@@ -163,7 +164,8 @@ contract Pool {
         require(reserve.length == changeInReserveArr.length); 
 
         for (uint i=0; i< reserve.length; i++) {
-            changeInReserveArr[i] = reserve[i] + incomingAssets[i]; }
+            changeInReserveArr[i] = reserve[i] + incomingAssets[i]; 
+        }
         uint x0 = amountOfTokenGiven; 
         uint k = indexOfTargetToken;     
 
